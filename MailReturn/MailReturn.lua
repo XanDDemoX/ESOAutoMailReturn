@@ -26,8 +26,6 @@ local function IsValidSubject(subject)
 end
 
 local function IsReturnRequired(id, returned,subject,numAttachments,attachedMoney,codAmount)
-
-	
 	return IsMailReturnable(id) and returned == false and IsValidSubject(subject) and (numAttachments > 0 or attachedMoney > 0) and codAmount == 0 
 end
 
@@ -80,16 +78,17 @@ local function MailReturn_Open_Mailbox(eventCode)
 	if _refresh == false then return end
 	
 	local mailId = GetNextMailId()
-
+	
 	while (mailId ~= nil) do
 	
 		RequestReadMail(mailId)
 		
 		mailId = GetNextMailId(mailId)
+
 	end
 	
-	if count > 0 then
-		d(_prefix..": "..tostring(_count).." mails to return to "..tostring(#_data).." senders.")
+	if _count > 0 then
+		d(_prefix..": "..tostring(_count).." mail"..((_count > 1 and "s") or "") .." to return to "..tostring(#_data).." senders.")
 	end
 
 	CloseMailbox()
