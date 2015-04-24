@@ -1,7 +1,7 @@
 ESOAutoMailReturn
 =============
 
-An addon for The Elder Scrolls Online which automatically returns any mail with attachments received from another player that starts with one of the following subject lines:
+An addon for The Elder Scrolls Online which automatically returns any mail with attachments received from another player that starts with one of the following subject prefixes:
 
 * /r
 * /ret 
