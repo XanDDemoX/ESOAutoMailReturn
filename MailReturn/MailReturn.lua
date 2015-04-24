@@ -1,9 +1,8 @@
 --------------------------------------
---  Auto Mail Return Version 0.0.3  --
+--  Auto Mail Return Version 0.0.4  --
 --------------------------------------
 
 local _refresh = false 
-local _data = {}
 
 local _pending = {}
 local _delay = 1500
@@ -13,6 +12,18 @@ local _subjects = {"/return","/ret","/r"}
 
 function stringStartWith(str,strstart)
    return string.sub(str,1,string.len(strstart))==strstart
+end
+
+local function IsPending(id)
+	return _pending[id] ~= nil
+end
+
+local function SetPending(id)
+	_pending[id] = id
+end
+
+local function ClearPending(id)
+	_pending[id] = nil
 end
 
 local function IsValidSubject(subject)
@@ -55,18 +66,20 @@ local function ReturnAllMail(data,total,delay)
 			
 			last = cur == total 
 			
-			if _pending[id] == nil then
+			if IsPending(id) == false then
 			
-				_pending[id] = id
+				SetPending(id)
 				
 				zo_callLater(function() 
+					
+					RequestReadMail(id)
+					MAIL_INBOX:EndRead()
 					
 					ReturnMail(id)
 
 					d(_prefix..": "..item.sender.." mail "..tostring(i).." of "..tostring(count).." returned.")
 					
-					
-					_pending[id] = nil
+					ClearPending(id)
 					
 					if last == true then
 						MAIL_INBOX:RefreshData()
@@ -85,6 +98,7 @@ local function MailReturn_Player_Activated(eventCode)
 end
 
 local function MailReturn_Mail_Num_Unread_Changed(eventCode,count)
+	if count == 0 then return end 
 	MailReturn_Refresh()
 end
 
@@ -109,33 +123,39 @@ end
 local function GetMailToReturn(ids)
 	
 	local count = 0 
+	local senderCount = 0
 	local _read = 0
 	local total = #ids
 	
 	local data = {}
 	
 	for i,id in ipairs(ids) do
-		if _pending[id] == nil and IsMailReturnable(id) == true then
+		if IsPending(id) == false and IsMailReturnable(id) == true then
+		
 			local senderDisplayName, senderCharacterName, subjectText, mailIcon, unread, fromSystem, fromCustomerService, returned, numAttachments, attachedMoney, codAmount, expiresInDays, secsSinceReceived = GetMailItemInfo(id)
 
 			if IsReturnRequired(id,returned,subjectText,numAttachments,attachedMoney,codAmount) == true then
-			
-				local tbl = _data[senderDisplayName] or {}
+				
+				local tbl = data[senderDisplayName]
+				
+				if tbl == nil then 
+					senderCount = senderCount + 1
+					tbl = {}
+					data[senderDisplayName] = tbl
+				end
 
 				table.insert(tbl,{id = id, sender=senderDisplayName})
-
-				data[senderDisplayName] = tbl
-
+				
 				count = count + 1
 
-				d("returnable: "..tostring(_read).." of "..tostring(_total).." "..senderDisplayName.." "..subjectText.." "..numAttachments)
+				--d("returnable: "..tostring(_read).." of "..tostring(_total).." "..senderDisplayName.." "..subjectText.." "..numAttachments)
 			
 			end
 		end
 		_read = _read + 1
 	end
 	
-	return data,count
+	return data,count,senderCount
 end
 
 local function MailReturn_Open_Mailbox(eventCode)
@@ -143,10 +163,10 @@ local function MailReturn_Open_Mailbox(eventCode)
 	
 	local ids = GetMailIds()
 
-	local data,count = GetMailToReturn(ids)
+	local data,count,senderCount = GetMailToReturn(ids)
 	
 	if count > 0 then
-		d(_prefix..": "..tostring(_count).." mail"..((count > 1 and "s") or "") .." to return to "..tostring(#_data).." senders.")
+		d(_prefix..": "..tostring(count).." mail"..((count > 1 and "s") or "") .." to return to "..tostring(senderCount).." senders.")
 		ReturnAllMail(data,count,_delay)
 	else
 		MAIL_INBOX:RefreshData()
@@ -172,8 +192,7 @@ local function Initialise()
 	EVENT_MANAGER:RegisterForEvent("MailReturn_Open_Mailbox", EVENT_MAIL_OPEN_MAILBOX, MailReturn_Open_Mailbox)
 	
 	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Mailbox", EVENT_MAIL_CLOSE_MAILBOX, MailReturn_Close_Mailbox)
-	
-	MAIL_INBOX:EndRead()
+
 end
 
 local function MailReturn_Loaded(eventCode, addOnName)
