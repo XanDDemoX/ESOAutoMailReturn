@@ -1,8 +1,8 @@
 --------------------------------------
---  Auto Mail Return Version 0.0.4  --
+--  Auto Mail Return Version 0.0.5  --
 --------------------------------------
 
-local _refresh = false 
+local _task = nil 
 
 local _pending = {}
 local _delay = 1500
@@ -15,15 +15,16 @@ function stringStartWith(str,strstart)
 end
 
 local function IsPending(id)
-	return _pending[id] ~= nil
+	local item =_pending[id] 
+	return item ~= nil,item
 end
 
-local function SetPending(id)
-	_pending[id] = id
-end
-
-local function ClearPending(id)
-	_pending[id] = nil
+local function QueueTask(id,callback)
+	_pending[id] = {id=id,last=last,callback=function(...) 
+		callback(...) 
+		_pending[id] = nil
+	end}
+	RequestReadMail(id)
 end
 
 local function IsValidSubject(subject)
@@ -40,10 +41,12 @@ local function IsReturnRequired(id, returned,subject,numAttachments,attachedMone
 	return returned == false and IsValidSubject(subject) and (numAttachments > 0 or attachedMoney > 0) and codAmount == 0 
 end
 
-local function MailReturn_Refresh()
-	if _refresh == true then return end
-	_refresh = true 
+local function MailReturn_Run(func)
+	
+	if _task ~= nil then return end
+	_task = func 
 	RequestOpenMailbox()
+
 end
 
 local function ReturnAllMail(data,total,delay)
@@ -68,38 +71,24 @@ local function ReturnAllMail(data,total,delay)
 			
 			if IsPending(id) == false then
 			
-				SetPending(id)
-				
-				zo_callLater(function() 
-					
-					RequestReadMail(id)
-					MAIL_INBOX:EndRead()
-					
-					ReturnMail(id)
-
-					d(_prefix..": "..item.sender.." mail "..tostring(i).." of "..tostring(count).." returned.")
-					
-					ClearPending(id)
-					
-					if last == true then
+				QueueTask(id,function(item)
+					zo_callLater(function() 
+						
+						ReturnMail(id)
 						MAIL_INBOX:RefreshData()
-						CloseMailbox()
-					end
-					
-				end,delay)
-				
+						
+						d(_prefix..": "..item.sender.." mail "..tostring(i).." of "..tostring(count).." returned.")
+												
+						if last == true then
+							CloseMailbox()
+						end
+						
+					end,delay)
+				end)
+
 			end
 		end
 	end
-end
-
-local function MailReturn_Player_Activated(eventCode)
-	MailReturn_Refresh()
-end
-
-local function MailReturn_Mail_Num_Unread_Changed(eventCode,count)
-	if count == 0 then return end 
-	MailReturn_Refresh()
 end
 
 local function GetMailIds()
@@ -158,9 +147,7 @@ local function GetMailToReturn(ids)
 	return data,count,senderCount
 end
 
-local function MailReturn_Open_Mailbox(eventCode)
-	if _refresh == false then return end
-	
+local function ReturnTask()
 	local ids = GetMailIds()
 
 	local data,count,senderCount = GetMailToReturn(ids)
@@ -172,12 +159,36 @@ local function MailReturn_Open_Mailbox(eventCode)
 		MAIL_INBOX:RefreshData()
 		CloseMailbox()
 	end
+end
+
+local function MailReturn_Player_Activated(eventCode)
+	MailReturn_Run(ReturnTask)
+end
+
+local function MailReturn_Mail_Num_Unread_Changed(eventCode,count)
+	if count == 0 then return end 
+	MailReturn_Run(ReturnTask)
+end
+
+local function MailReturn_Open_Mailbox(eventCode)
+	if _task == nil then return end
+	_task()
+end
+
+local function MailReturn_Read_Mail(eventCode,mailId)
+	local pending, item = IsPending(mailId)
 	
+	if pending == true then
+	
+		MAIL_INBOX:EndRead()
+		
+		item:callback()
+	end
 end
 
 local function MailReturn_Close_Mailbox(eventCode)
-	if _refresh == false then return end
-	_refresh = false
+	if _task == nil then return end
+	_task = nil
 end
 
 local function Initialise()
@@ -193,6 +204,22 @@ local function Initialise()
 	
 	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Mailbox", EVENT_MAIL_CLOSE_MAILBOX, MailReturn_Close_Mailbox)
 
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Read_Mail",EVENT_MAIL_READABLE,MailReturn_Read_Mail)
+	
+	SLASH_COMMANDS["/rrepair"] = function()
+
+		MailReturn_Run(function()
+			local ids = GetMailIds()
+			d(#ids)
+			for i,id in ipairs(ids) do
+				QueueTask(id,function(item) 
+
+				end)
+			end
+		
+		end)
+		
+	end
 end
 
 local function MailReturn_Loaded(eventCode, addOnName)
