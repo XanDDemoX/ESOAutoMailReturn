@@ -64,8 +64,10 @@ local function ReturnAllMail()
 				zo_callLater(function() 
 					
 					ReturnMail(id)
-									
+					
+					MAIL_INBOX:RefreshData()
 					d(_prefix..": "..item.sender.." mail "..tostring(i).." of "..tostring(count).." returned.")
+					
 					
 					_pending[id] = nil
 					
@@ -116,7 +118,15 @@ local function MailReturn_Open_Mailbox(eventCode)
 	_total = #ids
 	
 	for i,id in ipairs(ids) do
-		RequestReadMail(id)
+		if _pending[id] == nil then
+
+			local unread, returned = GetMailFlags(id)
+			if unread == false and returned == false then 
+				MAIL_INBOX:RequestReadMessage(id)
+			else
+				_read = _read + 1
+			end
+		end
 	end
 
 end
@@ -124,50 +134,47 @@ end
 local function MailReadable_Mail_Readable(eventCode,mailId)
 	if _refresh == false then return end
 	
-	--d(mailId)
-	
+	local senderDisplayName, senderCharacterName, subjectText, mailIcon, unread, fromSystem, fromCustomerService, returned, numAttachments, attachedMoney, codAmount, expiresInDays, secsSinceReceived = GetMailItemInfo(mailId)
 	if _read < _total then
-	
-		if _pending[mailId] == nil then
+
+		if IsReturnRequired(mailId,returned,subjectText,numAttachments,attachedMoney,codAmount) == true then
+			local tbl = _data[senderDisplayName] or {}
+
+			table.insert(tbl,{id = mailId, sender=senderDisplayName})
 		
-			local senderDisplayName, senderCharacterName, subjectText, mailIcon, unread, fromSystem, fromCustomerService, returned, numAttachments, attachedMoney, codAmount, expiresInDays, secsSinceReceived = GetMailItemInfo(mailId)
-
-			if IsReturnRequired(mailId,returned,subjectText,numAttachments,attachedMoney,codAmount) == true then
-				local tbl = _data[senderDisplayName] or {}
-
-				table.insert(tbl,{id = mailId, sender=senderDisplayName})
+			_data[senderDisplayName] = tbl
 			
-				_data[senderDisplayName] = tbl
-				
-				_count = _count + 1
-				
-				--d("returnable: "..tostring(_read).." of "..tostring(_total).." "..senderDisplayName.." "..subjectText.." "..numAttachments)
-			end
+			_count = _count + 1
 			
+			d("returnable: "..tostring(_read).." of "..tostring(_total).." "..senderDisplayName.." "..subjectText.." "..numAttachments)
 		end
 		
-		_read = _read + 1
+		MAIL_INBOX:EndRead()
 		
+		_read = _read + 1
 	end
 	
 	if _read >= _total then
+	
 		_read = 0 
 		_total = 0
-		
+
 		if _count > 0 then
 			d(_prefix..": "..tostring(_count).." mail"..((_count > 1 and "s") or "") .." to return to "..tostring(#_data).." senders.")
 			ReturnAllMail()
 		else
+			MAIL_INBOX:RefreshData()
 			CloseMailbox()
 		end
-		
+
 	end
 end
 
 local function MailReturn_Close_Mailbox(eventCode)
 	if _refresh == false then return end
 	_refresh = false
-	MAIL_INBOX:RefreshData()
+
+
 end
 
 local function Initialise()
