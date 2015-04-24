@@ -78,7 +78,7 @@ end
 
 local function MailReturn_Open_Mailbox(eventCode)
 	if _refresh == false then return end
-	d(_prefix..": Scanning Mailbox...")
+	
 	local mailId = GetNextMailId()
 
 	while (mailId ~= nil) do
@@ -87,9 +87,11 @@ local function MailReturn_Open_Mailbox(eventCode)
 		
 		mailId = GetNextMailId(mailId)
 	end
-
-	d(_prefix..": Mailbox Scanned "..tostring(_count).." mails to return to "..tostring(#_data).." senders.")
 	
+	if count > 0 then
+		d(_prefix..": "..tostring(_count).." mails to return to "..tostring(#_data).." senders.")
+	end
+
 	CloseMailbox()
 end
 
