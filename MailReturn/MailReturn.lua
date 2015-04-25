@@ -1,11 +1,13 @@
 --------------------------------------
---  Auto Mail Return Version 0.0.5  --
+--  Auto Mail Return Version 0.0.6  --
 --------------------------------------
 
 local _task = nil 
 
 local _pending = {}
-local _delay = 1500
+local _tasks = {}
+
+local _delay = 1250
 local _prefix = "[AutoMailReturn]"
 
 local _subjects = {"/return","/ret","/r"}
@@ -17,14 +19,6 @@ end
 local function IsPending(id)
 	local item =_pending[id] 
 	return item ~= nil,item
-end
-
-local function QueueTask(id,callback)
-	_pending[id] = {id=id,last=last,callback=function(...) 
-		callback(...) 
-		_pending[id] = nil
-	end}
-	RequestReadMail(id)
 end
 
 local function IsValidSubject(subject)
@@ -49,46 +43,69 @@ local function MailReturn_Run(func)
 
 end
 
-local function ReturnAllMail(data,total,delay)
+local function DelayedReturnMail(item,delay,callback)
+	local id = item.id
+	zo_callLater(function() 
+		
+		ReturnMail(id)
+		
+		_pending[id] = nil
+		
+		MAIL_INBOX:RefreshData()
+									
+		if last == true then
+			CloseMailbox()
+		end
+		
+		if callback ~= nil then 
+			callback()
+		end
+
+	end,delay)
+end
+
+local function ReturnNext()
+
+	local item = _tasks[1]
+	if item == nil then return end
+	
+	table.remove(_tasks,1)
+	
+	DelayedReturnMail(item,item.delay,function() d(item.text) 
+		ReturnNext()
+	end)
+
+end
+
+local function QueueMail(data,total,delay)
 
 	data = data or {}
 	local count 
-	local id 
 	
 	local cur = 0
 	
-	local last = false
+	for k,v in pairs(data) do
 	
-	for k,v in pairs(data) do 
 		count = #v
-		for i,item in ipairs(v) do 
 		
-			cur = cur + 1 
+		for i,item in ipairs(v) do
+		
+			cur = cur + 1
 			
-			id = item.id
+			local t = {id=item.id,last=cur==total,delay=delay,item=item,text=_prefix..": "..item.sender.." mail "..tostring(i).." of "..tostring(count).." returned."}
 			
-			last = cur == total 
+			_pending[item.id] = t
 			
-			if IsPending(id) == false then
+			table.insert(_tasks,t)
 			
-				QueueTask(id,function()
-					zo_callLater(function() 
-						
-						ReturnMail(id)
-						MAIL_INBOX:RefreshData()
-						
-						d(_prefix..": "..item.sender.." mail "..tostring(i).." of "..tostring(count).." returned.")
-												
-						if last == true then
-							CloseMailbox()
-						end
-						
-					end,delay)
-				end)
-
-			end
 		end
+		
 	end
+	
+	for i,item in ipairs(_tasks) do
+		RequestReadMail(item.id)
+	end
+
 end
 
 local function GetMailIds()
@@ -117,6 +134,7 @@ local function GetMailToReturn(ids)
 	local total = #ids
 	
 	local data = {}
+	local items = {}
 	
 	for i,id in ipairs(ids) do
 		if IsPending(id) == false and IsMailReturnable(id) == true then
@@ -132,8 +150,10 @@ local function GetMailToReturn(ids)
 					tbl = {}
 					data[senderDisplayName] = tbl
 				end
-
-				table.insert(tbl,{id = id, sender=senderDisplayName})
+				
+				local item = {id = id, sender=senderDisplayName}
+				
+				table.insert(tbl,item)
 				
 				count = count + 1
 
@@ -143,7 +163,6 @@ local function GetMailToReturn(ids)
 		end
 		_read = _read + 1
 	end
-	
 	return data,count,senderCount
 end
 
@@ -154,7 +173,7 @@ local function ReturnTask()
 	
 	if count > 0 then
 		d(_prefix..": "..tostring(count).." mail"..((count > 1 and "s") or "") .." to return to "..tostring(senderCount).." senders.")
-		ReturnAllMail(data,count,_delay)
+		QueueMail(data,count,_delay)
 	else
 		MAIL_INBOX:RefreshData()
 		CloseMailbox()
@@ -176,13 +195,17 @@ local function MailReturn_Open_Mailbox(eventCode)
 end
 
 local function MailReturn_Read_Mail(eventCode,mailId)
-	local pending, item = IsPending(mailId)
+	local pending,item = IsPending(mailId)
 	
 	if pending == true then
 	
 		MAIL_INBOX:EndRead()
 		
-		item:callback()
+		if item.last == true then 
+			d("return")
+			ReturnNext()
+		end
+		
 	end
 end
 
@@ -206,20 +229,14 @@ local function Initialise()
 
 	EVENT_MANAGER:RegisterForEvent("MailReturn_Read_Mail",EVENT_MAIL_READABLE,MailReturn_Read_Mail)
 	
-	SLASH_COMMANDS["/rrepair"] = function()
-
-		MailReturn_Run(function()
-			local ids = GetMailIds()
-			d(#ids)
-			for i,id in ipairs(ids) do
-				QueueTask(id,function(item) 
-
-				end)
-			end
-		
-		end)
-		
+	local func = function()
+		d(_prefix..": Refeshing...")
+		MailReturn_Run(ReturnTask)
 	end
+	
+	SLASH_COMMANDS["/return"] = func
+	SLASH_COMMANDS["/ret"] = func
+	SLASH_COMMANDS["/r"] = func
 end
 
 local function MailReturn_Loaded(eventCode, addOnName)
