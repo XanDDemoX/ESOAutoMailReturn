@@ -71,7 +71,8 @@ local function ReturnNext()
 	
 	table.remove(_tasks,1)
 	
-	DelayedReturnMail(item,item.delay,function() d(item.text) 
+	DelayedReturnMail(item,item.delay,function() 
+		d(item.text) 
 		ReturnNext()
 	end)
 
@@ -202,7 +203,6 @@ local function MailReturn_Read_Mail(eventCode,mailId)
 		MAIL_INBOX:EndRead()
 		
 		if item.last == true then 
-			d("return")
 			ReturnNext()
 		end
 		
