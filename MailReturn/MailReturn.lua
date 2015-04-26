@@ -10,7 +10,7 @@ local _tasks = {}
 local _delay = 1250
 local _prefix = "[AutoMailReturn]"
 
-local _subjects = {"/return","/ret","/r"}
+local _subjects = {"/r","/b","/ret","return","bounce","/return","/bounce"}
 
 function stringStartWith(str,strstart)
    return string.sub(str,1,string.len(strstart))==strstart
