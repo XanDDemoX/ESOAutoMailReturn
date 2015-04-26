@@ -4,14 +4,18 @@ ESOAutoMailReturn
 An addon for The Elder Scrolls Online which automatically returns any mail with attachments received from another player that starts with one of the following subject prefixes:
 
 * /r
+* /b
 * /ret 
 * /return
+* /bounce
+* return
+* bounce 
 
 Optionally any other text may follow the subject prefix e.g:
 
 /r Extract Items
 
-Currently Mails are returned upon receipt and character login with a 1 second delay between each.
+Currently Mails are returned upon receipt and character login with a 1.25 second delay between each.
 
 Installation
 =============
@@ -33,12 +37,21 @@ Usage
 Install and then tell anyone who would like to mail you items for return to prefix the subjects with one of the following: 
 
 * /r
+* /b
 * /ret 
 * /return
+* /bounce
+* return
+* bounce 
 
 Optionally any other text may follow the subject prefix e.g:
 
 /r Extract Items
+
+Slash Commands
+=============
+
+* /r, /ret, /return - Force refresh and attempt to return any unsent mails.
 
 DISCLAIMER
 =============
