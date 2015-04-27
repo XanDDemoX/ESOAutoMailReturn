@@ -1,5 +1,5 @@
 --------------------------------------
---  Auto Mail Return Version 0.0.6  --
+--  Auto Mail Return Version 0.0.7  --
 --------------------------------------
 
 local _task = nil 
@@ -8,9 +8,11 @@ local _pending = {}
 local _tasks = {}
 
 local _delay = 1250
-local _prefix = "[AutoMailReturn]"
+local _prefix = "[AutoMailReturn]: "
 
 local _subjects = {"/r","/b","/ret","return","bounce","/return","/bounce"}
+
+local _settings = {autoDeleteEmpty = true, delay = _delay}
 
 function stringStartWith(str,strstart)
    return string.sub(str,1,string.len(strstart))==strstart
@@ -33,6 +35,11 @@ end
 
 local function IsReturnRequired(id, returned,subject,numAttachments,attachedMoney,codAmount)
 	return returned == false and IsValidSubject(subject) and (numAttachments > 0 or attachedMoney > 0) and codAmount == 0 
+end
+
+local function IsEmptyReturned(id)
+	local senderDisplayName, senderCharacterName, subjectText, mailIcon, unread, fromSystem, fromCustomerService, returned, numAttachments, attachedMoney, codAmount, expiresInDays, secsSinceReceived = GetMailItemInfo(id)
+	return returned == true and IsValidSubject(subjectText) and numAttachments == 0 and attachedMoney == 0 and codAmount == 0
 end
 
 local function MailReturn_Run(func)
@@ -93,7 +100,7 @@ local function QueueMail(data,total,delay)
 		
 			cur = cur + 1
 			
-			local t = {id=item.id,last=cur==total,delay=delay,item=item,text=_prefix..": "..item.sender.." mail "..tostring(i).." of "..tostring(count).." returned."}
+			local t = {id=item.id,last=cur==total,delay=delay,item=item,text=_prefix..item.sender.." mail "..tostring(i).." of "..tostring(count).." returned."}
 			
 			_pending[item.id] = t
 			
@@ -173,8 +180,8 @@ local function ReturnTask()
 	local data,count,senderCount = GetMailToReturn(ids)
 	
 	if count > 0 then
-		d(_prefix..": "..tostring(count).." mail"..((count > 1 and "s") or "") .." to return to "..tostring(senderCount).." senders.")
-		QueueMail(data,count,_delay)
+		d(_prefix..tostring(count).." mail"..((count > 1 and "s") or "") .." to return to "..tostring(senderCount).." senders.")
+		QueueMail(data,count,_settings.delay)
 	else
 		MAIL_INBOX:RefreshData()
 		CloseMailbox()
@@ -214,6 +221,22 @@ local function MailReturn_Close_Mailbox(eventCode)
 	_task = nil
 end
 
+local function MailReturn_Take_Attached_Item_Success(eventCode,id)
+	if _settings.autoDeleteEmpty == true and IsEmptyReturned(id) == true then
+		DeleteMail(id,false)
+	end
+end
+
+local function isOnString(str)
+	str = string.lower(str)
+	return str == "+" or str == "on"
+end
+
+local function isOffString(str)
+	str = string.lower(str)
+	return str == "-" or str == "off"
+end
+
 local function Initialise()
 
 	-- for refresh on login / travel / reloadui
@@ -229,19 +252,35 @@ local function Initialise()
 
 	EVENT_MANAGER:RegisterForEvent("MailReturn_Read_Mail",EVENT_MAIL_READABLE,MailReturn_Read_Mail)
 	
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Take_Attached_Item_Success",EVENT_MAIL_TAKE_ATTACHED_ITEM_SUCCESS,MailReturn_Take_Attached_Item_Success)
+	
 	local func = function()
-		d(_prefix..": Refeshing...")
+		d(_prefix.."Refeshing...")
 		MailReturn_Run(ReturnTask)
 	end
 	
 	SLASH_COMMANDS["/return"] = func
 	SLASH_COMMANDS["/ret"] = func
 	SLASH_COMMANDS["/r"] = func
+	
+	local delfunc = function(arg)
+		if isOnString(arg) then
+			_settings.autoDeleteEmpty = true
+			d(_prefix.."Empty Mail Delete Enabled")
+		elseif isOffString(arg) then
+			_settings.autoDeleteEmpty = false
+			d(_prefix.."Empty Mail Delete Disabled")
+		end
+	end
+	
+	SLASH_COMMANDS["/rdelete"] = delfunc
 end
 
 local function MailReturn_Loaded(eventCode, addOnName)
 
 	if(addOnName ~= "MailReturn") then return end
+	
+	_settings = ZO_SavedVars:New("MailReturn_SavedVariables", "1", "", _settings, nil)
 	
 	Initialise()
 end

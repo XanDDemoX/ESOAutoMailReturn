@@ -17,6 +17,8 @@ Optionally any other text may follow the subject prefix e.g:
 
 Currently Mails are returned upon receipt and character login with a 1.25 second delay between each.
 
+Optionally automatically delete's returned mails upon all attachments being taken (on by default). 
+
 Installation
 =============
 
@@ -52,6 +54,7 @@ Slash Commands
 =============
 
 * /r, /ret, /return - Force refresh and attempt to return any unsent mails.
+* /rdelete +/-, on/off - Enable or disable automatic deletion of emptied returned mail 
 
 DISCLAIMER
 =============
