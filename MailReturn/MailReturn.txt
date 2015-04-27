@@ -1,6 +1,6 @@
-## Title: Mail Return V0.0.7
+## Title: Mail Return V0.0.8
 
-## Version 0.0.7
+## Version 0.0.8
 ## APIVersion: 100011
 ## SavedVariables: MailReturn_SavedVariables
 MailReturn.lua

@@ -1,5 +1,5 @@
 --------------------------------------
---  Auto Mail Return Version 0.0.7  --
+--  Auto Mail Return Version 0.0.8  --
 --------------------------------------
 
 local _task = nil 
@@ -13,6 +13,8 @@ local _prefix = "[AutoMailReturn]: "
 local _subjects = {"/r","/b","/ret","return","bounce","/return","/bounce"}
 
 local _settings = {autoDeleteEmpty = true, delay = _delay}
+
+local _currentMail = { sendTo="", subject="" }
 
 function stringStartWith(str,strstart)
    return string.sub(str,1,string.len(strstart))==strstart
@@ -42,11 +44,39 @@ local function IsEmptyReturned(id)
 	return returned == true and IsValidSubject(subjectText) and numAttachments == 0 and attachedMoney == 0 and codAmount == 0
 end
 
-local function MailReturn_Run(func)
+
+local function isOnString(str)
+	str = string.lower(str)
+	return str == "+" or str == "on"
+end
+
+local function isOffString(str)
+	str = string.lower(str)
+	return str == "-" or str == "off"
+end
+
+local function stringNilOrEmpty(str)
+	return str == nil or str == ""
+end
+
+local function HookDescriptor(name,func)
+
+	local d
+	for i,v in ipairs(MAIL_SEND.staticKeybindStripDescriptor) do
+		if v.name == name then
+			d = v
+			break
+		end
+	end
 	
-	if _task ~= nil then return end
-	_task = func 
-	RequestOpenMailbox()
+	if d.callback == nil then return end 
+	
+	local cb = d.callback
+	
+	d.callback = function(...)
+		cb(...)
+		func(...)
+	end
 
 end
 
@@ -70,6 +100,7 @@ local function DelayedReturnMail(item,delay,callback)
 
 	end,delay)
 end
+
 
 local function ReturnNext()
 
@@ -174,6 +205,14 @@ local function GetMailToReturn(ids)
 	return data,count,senderCount
 end
 
+local function MailReturn_Run(func)
+	
+	if _task ~= nil then return end
+	_task = func 
+	RequestOpenMailbox()
+
+end
+
 local function ReturnTask()
 	local ids = GetMailIds()
 
@@ -186,6 +225,24 @@ local function ReturnTask()
 		MAIL_INBOX:RefreshData()
 		CloseMailbox()
 	end
+end
+
+local function ClearCurrentMail()
+	_currentMail.sendTo = ""
+	_currentMail.subject = ""
+end
+
+local function UpdateFromCurrentMail()
+	if IsValidSubject(_currentMail.subject) == true then 
+		ZO_MailSendToField:SetText(_currentMail.sendTo)
+		ZO_MailSendSubjectField:SetText(_currentMail.subject)
+	end
+	ClearCurrentMail()
+end
+
+local function UpdateCurrentMail()
+	_currentMail.sendTo = ZO_MailSendToField:GetText()
+	_currentMail.subject = ZO_MailSendSubjectField:GetText()
 end
 
 local function MailReturn_Player_Activated(eventCode)
@@ -227,15 +284,10 @@ local function MailReturn_Take_Attached_Item_Success(eventCode,id)
 	end
 end
 
-local function isOnString(str)
-	str = string.lower(str)
-	return str == "+" or str == "on"
+local function MailReturn_Mail_Send_Success(eventCode)
+	UpdateFromCurrentMail()
 end
 
-local function isOffString(str)
-	str = string.lower(str)
-	return str == "-" or str == "off"
-end
 
 local function Initialise()
 
@@ -253,6 +305,12 @@ local function Initialise()
 	EVENT_MANAGER:RegisterForEvent("MailReturn_Read_Mail",EVENT_MAIL_READABLE,MailReturn_Read_Mail)
 	
 	EVENT_MANAGER:RegisterForEvent("MailReturn_Take_Attached_Item_Success",EVENT_MAIL_TAKE_ATTACHED_ITEM_SUCCESS,MailReturn_Take_Attached_Item_Success)
+	
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Mail_Send_Success",EVENT_MAIL_SEND_SUCCESS,MailReturn_Mail_Send_Success)
+	
+	HookDescriptor(GetString(SI_MAIL_SEND_SEND),UpdateCurrentMail)
+	
+	HookDescriptor(GetString(SI_MAIL_SEND_CLEAR),ClearCurrentMail)
 	
 	local func = function()
 		d(_prefix.."Refeshing...")

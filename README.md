@@ -17,7 +17,11 @@ Optionally any other text may follow the subject prefix e.g:
 
 Currently Mails are returned upon receipt and character login with a 1.25 second delay between each.
 
-Optionally automatically deletes returned mails upon all attachments being taken (on by default). 
+Additional Features
+=============
+
+* Preserves sender and subject when returning mail.
+* Optionally automatically deletes returned mails upon all attachments being taken (on by default). 
 
 Installation
 =============
