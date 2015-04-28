@@ -26,6 +26,10 @@ Additional Features
 Installation
 =============
 
+1. Download Zip by clicking the "Download Zip" button on the right
+2. Open Zip and go into the folder named "EsoAutoMailReturn-master"
+3. Extract or copy the "MailReturn" folder into your addons folder:
+
 Place the "MailReturn" folder in your addons folder:
 
 "Documents\Elder Scrolls Online\live\Addons"
