@@ -1,5 +1,5 @@
 --------------------------------------
---  Auto Mail Return Version 0.0.8  --
+--  Auto Mail Return Version 0.0.9  --
 --------------------------------------
 
 local _task = nil 
@@ -15,6 +15,8 @@ local _subjects = {"/r","/b","/ret","return","bounce","/return","/bounce"}
 local _settings = {autoDeleteEmpty = true, delay = _delay}
 
 local _currentMail = { sendTo="", subject="" }
+
+local _blocked = false
 
 function stringStartWith(str,strstart)
    return string.sub(str,1,string.len(strstart))==strstart
@@ -90,7 +92,7 @@ local function DelayedReturnMail(item,delay,callback)
 		
 		MAIL_INBOX:RefreshData()
 									
-		if last == true then
+		if item.last == true then
 			CloseMailbox()
 		end
 		
@@ -105,7 +107,10 @@ end
 local function ReturnNext()
 
 	local item = _tasks[1]
-	if item == nil then return end
+	if item == nil then 
+		CloseMailbox() -- ensure mailbox is closed
+		return 
+	end
 	
 	table.remove(_tasks,1)
 	
@@ -207,8 +212,10 @@ end
 
 local function MailReturn_Run(func)
 	
+	if _blocked == true then return end 
 	if _task ~= nil then return end
 	_task = func 
+	
 	RequestOpenMailbox()
 
 end
@@ -289,6 +296,14 @@ local function MailReturn_Mail_Send_Success(eventCode)
 end
 
 
+local function WindowOpen(eventCode)
+	_blocked = true 
+end
+
+local function WindowClose(eventCode)
+	_blocked = false
+end 
+
 local function Initialise()
 
 	-- for refresh on login / travel / reloadui
@@ -307,6 +322,31 @@ local function Initialise()
 	EVENT_MANAGER:RegisterForEvent("MailReturn_Take_Attached_Item_Success",EVENT_MAIL_TAKE_ATTACHED_ITEM_SUCCESS,MailReturn_Take_Attached_Item_Success)
 	
 	EVENT_MANAGER:RegisterForEvent("MailReturn_Mail_Send_Success",EVENT_MAIL_SEND_SUCCESS,MailReturn_Mail_Send_Success)
+	
+	-- prevent running during interactions
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Crafting_Station_Interact",EVENT_CRAFTING_STATION_INTERACT,WindowOpen)
+	
+	EVENT_MANAGER:RegisterForEvent("MailReturn_End_Crafting_Station_Interact",EVENT_END_CRAFTING_STATION_INTERACT,WindowClose)
+	
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Open_Bank",EVENT_OPEN_BANK,WindowOpen)
+	
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Bank",EVENT_CLOSE_BANK,WindowClose)
+	
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Open_Guild_Bank",EVENT_OPEN_GUILD_BANK,WindowOpen)
+	
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Guild_Bank",EVENT_CLOSE_GUILD_BANK,WindowClose)
+	
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Open_Store",EVENT_OPEN_STORE,WindowOpen)
+	
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Store",EVENT_CLOSE_STORE,WindowClose)
+	
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Open_Trading_House",EVENT_OPEN_TRADING_HOUSE,WindowOpen)
+	
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Trading_House",EVENT_CLOSE_TRADING_HOUSE,WindowClose)
+	
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Trade_Invite_Accepted",EVENT_TRADE_INVITE_ACCEPTED,WindowOpen)
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Trade_Succeeded",EVENT_TRADE_SUCCEEDED,WindowClose)
+	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Trade_Cancelled",EVENT_TRADE_CANCELED ,WindowClose)
 	
 	HookDescriptor(GetString(SI_MAIL_SEND_SEND),UpdateCurrentMail)
 	
