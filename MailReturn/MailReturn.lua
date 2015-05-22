@@ -108,7 +108,6 @@ local function ReturnNext()
 
 	local item = _tasks[1]
 	if item == nil then 
-		CloseMailbox() -- ensure mailbox is closed
 		return 
 	end
 	
