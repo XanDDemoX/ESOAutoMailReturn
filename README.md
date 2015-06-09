@@ -19,7 +19,6 @@ Additional Features
 =============
 * Protects mails for return from Take Attachments.
 * Avoids running during combat and menu interactions (e.g bank/crafting)
-* Preserves the last sender and subject when returning mail.
 * Optionally automatically deletes returned mails upon all attachments being taken (on by default). 
 
 Installation
