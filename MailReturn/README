@@ -17,6 +17,7 @@ Optionally any other text may follow the subject prefix e.g:
 
 Additional Features
 - Protects mails for return from Take Attachments.
+- Avoids running during combat and menu interactions (e.g bank/crafting)
 - Preserves sender and subject when returning mail.
 - Optionally automatically deletes returned mails upon all attachments being taken (on by default). 
 

@@ -341,51 +341,59 @@ local function InitProtection()
 	end 
 end 
 
+local function addEvent(eventId,func)
+	EVENT_MANAGER:RegisterForEvent("MailReturn_"..tostring(eventId),eventId,func)
+end
+
+local function addEvents(func,...)
+
+	local count = select('#',...)
+	
+	local id
+	
+	for i = 1, count do 
+	
+		id = select(i,...)
+	
+		addEvent(id,func)
+	end 
+
+end
+
 local function Initialise()
 	InitProtection()
 	
 	-- for refresh on login / travel / reloadui
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Player_Activated", EVENT_PLAYER_ACTIVATED, MailReturn_Player_Activated)
+	addEvent(EVENT_PLAYER_ACTIVATED, MailReturn_Player_Activated)
 	
 	-- for refresh on receive
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Mail_Num_Unread_Changed",EVENT_MAIL_NUM_UNREAD_CHANGED,MailReturn_Mail_Num_Unread_Changed)
+	addEvent(EVENT_MAIL_NUM_UNREAD_CHANGED,MailReturn_Mail_Num_Unread_Changed)
 	
 	-- for reading mailbox
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Open_Mailbox", EVENT_MAIL_OPEN_MAILBOX, MailReturn_Open_Mailbox)
+	addEvent(EVENT_MAIL_OPEN_MAILBOX, MailReturn_Open_Mailbox)
 	
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Mailbox", EVENT_MAIL_CLOSE_MAILBOX, MailReturn_Close_Mailbox)
+	addEvent(EVENT_MAIL_CLOSE_MAILBOX, MailReturn_Close_Mailbox)
 
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Read_Mail",EVENT_MAIL_READABLE,MailReturn_Read_Mail)
+	addEvent(EVENT_MAIL_READABLE,MailReturn_Read_Mail)
 	
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Take_Attached_Item_Success",EVENT_MAIL_TAKE_ATTACHED_ITEM_SUCCESS,MailReturn_Take_Attached_Item_Success)
+	addEvent(EVENT_MAIL_TAKE_ATTACHED_ITEM_SUCCESS,MailReturn_Take_Attached_Item_Success)
 	
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Mail_Send_Success",EVENT_MAIL_SEND_SUCCESS,MailReturn_Mail_Send_Success)
+	addEvent(EVENT_MAIL_SEND_SUCCESS,MailReturn_Mail_Send_Success)
 	
 	-- prevent running during interactions
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Crafting_Station_Interact",EVENT_CRAFTING_STATION_INTERACT,WindowOpen)
 	
-	EVENT_MANAGER:RegisterForEvent("MailReturn_End_Crafting_Station_Interact",EVENT_END_CRAFTING_STATION_INTERACT,WindowClose)
+	addEvents(WindowOpen,EVENT_CRAFTING_STATION_INTERACT,EVENT_OPEN_BANK,EVENT_OPEN_GUILD_BANK,EVENT_OPEN_STORE,EVENT_OPEN_TRADING_HOUSE,EVENT_TRADE_INVITE_ACCEPTED)
 	
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Open_Bank",EVENT_OPEN_BANK,WindowOpen)
+	addEvents(WindowClose, EVENT_END_CRAFTING_STATION_INTERACT,EVENT_CLOSE_BANK,EVENT_CLOSE_GUILD_BANK,EVENT_CLOSE_STORE,EVENT_CLOSE_TRADING_HOUSE,EVENT_TRADE_SUCCEEDED,EVENT_TRADE_CANCELED)
 	
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Bank",EVENT_CLOSE_BANK,WindowClose)
-	
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Open_Guild_Bank",EVENT_OPEN_GUILD_BANK,WindowOpen)
-	
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Guild_Bank",EVENT_CLOSE_GUILD_BANK,WindowClose)
-	
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Open_Store",EVENT_OPEN_STORE,WindowOpen)
-	
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Store",EVENT_CLOSE_STORE,WindowClose)
-	
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Open_Trading_House",EVENT_OPEN_TRADING_HOUSE,WindowOpen)
-	
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Trading_House",EVENT_CLOSE_TRADING_HOUSE,WindowClose)
-	
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Trade_Invite_Accepted",EVENT_TRADE_INVITE_ACCEPTED,WindowOpen)
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Trade_Succeeded",EVENT_TRADE_SUCCEEDED,WindowClose)
-	EVENT_MANAGER:RegisterForEvent("MailReturn_Close_Trade_Cancelled",EVENT_TRADE_CANCELED ,WindowClose)
-	
+	addEvent(EVENT_PLAYER_COMBAT_STATE,function(eventCode,inCombat)
+		if inCombat == true then 
+			WindowOpen()
+		else
+			WindowClose()
+		end
+	end)
+
 	HookDescriptor(GetString(SI_MAIL_SEND_SEND),UpdateCurrentMail)
 	
 	HookDescriptor(GetString(SI_MAIL_SEND_CLEAR),ClearCurrentMail)
