@@ -1,7 +1,7 @@
-ESOAutoMailReturn v0.0.10
+ESOAutoMailReturn v1.0.0
 By XanDDemoX
 
-Automatically returns any mail with attachments received from another player that starts with one of the following subject prefixes:
+A lightweight mail return/bounce addon. Automatically returns any mail with attachments received from another player that starts with one of the following subject prefixes (case insensitive):
 
 * /r
 * /b
@@ -54,6 +54,9 @@ Slash Commands
 * /rdelete +/-, on/off - Enable or disable automatic deletion of emptied returned mail 
 
 Change Log
+
+Version 1.0.0
+	- Added string trims for sanity
 
 Version 0.0.10
 	- Added protection from returner taking attachments that are intended for a returnee. 

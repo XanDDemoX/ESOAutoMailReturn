@@ -1,7 +1,7 @@
-ESOAutoMailReturn V0.0.10
+ESOAutoMailReturn v1.0.0
 =============
 
-An addon for The Elder Scrolls Online which automatically returns any mail with attachments received from another player that starts with one of the following subject prefixes:
+A lightweight mail return/bounce addon for The Elder Scrolls Online. Automatically returns any mail with attachments received from another player that starts with one of the following subject prefixes (case insensitive):
 
 * /r
 * /b
@@ -18,13 +18,13 @@ Optionally any other text may follow the subject prefix e.g:
 Additional Features
 =============
 * Protects mails for return from Take Attachments.
-* Preserves sender and subject when returning mail.
+* Preserves the last sender and subject when returning mail.
 * Optionally automatically deletes returned mails upon all attachments being taken (on by default). 
 
 Installation
 =============
 
-1. [Download the latest version](https://raw.githubusercontent.com/XanDDemoX/ESOAutoMailReturn/master/zips/Mail%20Return%200.0.10.zip)
+1. [Download the latest version](https://raw.githubusercontent.com/XanDDemoX/ESOAutoMailReturn/master/zips/Auto%20Mail%20Return%201.0.0.zip)
 2. Extract or copy the "MailReturn" folder into your addons folder:
 
 "Documents\Elder Scrolls Online\live\Addons"
@@ -39,7 +39,7 @@ For example:
 
 Usage
 =============
-Install and then tell anyone who would like to mail you items for return to prefix the subjects with one of the following: 
+Install and tell your friends! They can bounce their mails with: 
 
 * /r
 * /b
@@ -61,7 +61,8 @@ Slash Commands
 
 Change Log
 =============
-
+* **Version 1.0.0**
+  * Added string trims for sanity
 * **Version 0.0.10**
   * Added protection from returner taking attachments that are intended for a returnee. 
 

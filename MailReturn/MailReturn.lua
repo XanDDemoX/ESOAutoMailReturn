@@ -16,6 +16,11 @@ local _currentMail = { sendTo="", subject="" }
 local _blocked = false
 local _blockedrun = false
 
+local function trim(str)
+	if str == nil or str == "" then return str end 
+	return (str:gsub("^%s*(.-)%s*$", "%1"))
+end 
+
 function stringStartWith(str,strstart)
    return string.sub(str,1,string.len(strstart))==strstart
 end
@@ -26,7 +31,7 @@ local function IsPending(id)
 end
 
 local function IsValidSubject(subject)
-	subject = string.lower(subject)
+	subject = string.lower(trim(subject))
 	for i,v in ipairs(_subjects) do
 		if stringStartWith(subject,v) == true then
 			return true
@@ -44,15 +49,11 @@ local function IsEmptyReturned(id)
 	return returned == true and IsValidSubject(subjectText) and numAttachments == 0 and attachedMoney == 0 and codAmount == 0
 end
 
-
-local function isOnString(str)
-	str = string.lower(str)
-	return str == "+" or str == "on"
-end
-
-local function isOffString(str)
-	str = string.lower(str)
-	return str == "-" or str == "off"
+local function TryParseOnOff(str)
+	local on = (str == "+" or str == "on")
+	local off = (str == "-" or str == "off")
+	if on == false and off == false then return nil end
+	return on
 end
 
 local function stringNilOrEmpty(str)
@@ -399,12 +400,14 @@ local function Initialise()
 	SLASH_COMMANDS["/r"] = func
 	
 	local delfunc = function(arg)
-		if isOnString(arg) then
-			_settings.autoDeleteEmpty = true
-			d(_prefix.."Empty Mail Delete Enabled")
-		elseif isOffString(arg) then
-			_settings.autoDeleteEmpty = false
-			d(_prefix.."Empty Mail Delete Disabled")
+		
+		arg = trim(arg)
+		
+		local onOff = TryParseOnOff(arg)
+	
+		if onOff ~= nil then 
+			_settings.autoDeleteEmpty = onOff
+			d(table.concat({_prefix,"Empty Mail Delete",((onOff == true and "Enabled") or "Disabled")}))
 		end
 	end
 	
