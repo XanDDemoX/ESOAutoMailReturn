@@ -1,6 +1,3 @@
---------------------------------------
---  Auto Mail Return Version 0.0.9  --
---------------------------------------
 
 local _task = nil 
 
@@ -17,6 +14,7 @@ local _settings = {autoDeleteEmpty = true, delay = _delay}
 local _currentMail = { sendTo="", subject="" }
 
 local _blocked = false
+local _blockedrun = false
 
 function stringStartWith(str,strstart)
    return string.sub(str,1,string.len(strstart))==strstart
@@ -211,7 +209,10 @@ end
 
 local function MailReturn_Run(func)
 	
-	if _blocked == true then return end 
+	if _blocked == true then 
+		_blockedrun = true 
+		return 
+	end 
 	if _task ~= nil then return end
 	_task = func 
 	
@@ -301,10 +302,47 @@ end
 
 local function WindowClose(eventCode)
 	_blocked = false
+	if _blockedrun == true then 
+		_blockedrun = false
+		MailReturn_Run(ReturnTask)
+	end 
+end 
+
+local function InitProtection()
+	local takeAttach_Keybind = MAIL_INBOX.selectionKeybindStripDescriptor[3]
+	
+	if takeAttach_Keybind ~= nil then 
+		
+		local orig_tryTakeAll = MAIL_INBOX.TryTakeAll
+		
+		local orig_takeAttachVisible = takeAttach_Keybind.visible
+		
+		MAIL_INBOX.TryTakeAll = function(self,...)
+			
+			local id = self.mailId
+			
+			if id and IsMailReturnable(id) == false then 
+				orig_tryTakeAll(self,...)
+			end 
+			
+		end 
+		
+		takeAttach_Keybind.visible = function()
+			
+			local id = MAIL_INBOX.mailId
+		
+			if id then 
+				return orig_takeAttachVisible() and IsMailReturnable(id) == false
+			end 
+			return orig_takeAttachVisible()
+		end 
+	
+	end 
 end 
 
 local function Initialise()
-
+	InitProtection()
+	
 	-- for refresh on login / travel / reloadui
 	EVENT_MANAGER:RegisterForEvent("MailReturn_Player_Activated", EVENT_PLAYER_ACTIVATED, MailReturn_Player_Activated)
 	
@@ -371,6 +409,8 @@ local function Initialise()
 	end
 	
 	SLASH_COMMANDS["/rdelete"] = delfunc
+	
+
 end
 
 local function MailReturn_Loaded(eventCode, addOnName)

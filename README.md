@@ -1,4 +1,4 @@
-ESOAutoMailReturn V0.0.9
+ESOAutoMailReturn V0.0.10
 =============
 
 An addon for The Elder Scrolls Online which automatically returns any mail with attachments received from another player that starts with one of the following subject prefixes:
@@ -61,6 +61,13 @@ Slash Commands
 
 * /r, /ret, /return - Force refresh and attempt to return any unsent mails.
 * /rdelete +/-, on/off - Enable or disable automatic deletion of emptied returned mail 
+
+Change Log
+=============
+
+* **Version 0.0.10**
+  * Added protection from returner taking attachments that are intended for a returnee. 
+
 
 DISCLAIMER
 =============
