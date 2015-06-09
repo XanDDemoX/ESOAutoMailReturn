@@ -407,7 +407,7 @@ local function Initialise()
 	
 		if onOff ~= nil then 
 			_settings.autoDeleteEmpty = onOff
-			d(table.concat({_prefix,"Empty Mail Delete",((onOff == true and "Enabled") or "Disabled")}))
+			d(table.concat({_prefix,"Empty Mail Delete ",((onOff == true and "Enabled") or "Disabled")}))
 		end
 	end
 	
