@@ -321,20 +321,15 @@ local function InitProtection()
 			
 			local id = self.mailId
 			
-			if id and IsMailReturnable(id) == false then 
-				orig_tryTakeAll(self,...)
-			end 
-			
+			if id and IsMailReturnable(id) == true then return end 
+
+			orig_tryTakeAll(self,...)
+
 		end 
 		
 		takeAttach_Keybind.visible = function()
-			
 			local id = MAIL_INBOX.mailId
-		
-			if id then 
-				return orig_takeAttachVisible() and IsMailReturnable(id) == false
-			end 
-			return orig_takeAttachVisible()
+			return orig_takeAttachVisible() and (id == nil or IsMailReturnable(id) == false)
 		end 
 	
 	end 
