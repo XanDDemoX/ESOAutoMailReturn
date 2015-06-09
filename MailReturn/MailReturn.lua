@@ -308,6 +308,11 @@ local function WindowClose(eventCode)
 	end 
 end 
 
+local function IsMailForReturn(id)
+	local senderDisplayName, senderCharacterName, subjectText, mailIcon, unread, fromSystem, fromCustomerService, returned, numAttachments, attachedMoney, codAmount, expiresInDays, secsSinceReceived = GetMailItemInfo(id)
+	return IsReturnRequired(id,returned,subjectText,numAttachments,attachedMoney,codAmount) == true
+end
+
 local function InitProtection()
 	local takeAttach_Keybind = MAIL_INBOX.selectionKeybindStripDescriptor[3]
 	
@@ -321,7 +326,7 @@ local function InitProtection()
 			
 			local id = self.mailId
 			
-			if id and IsMailReturnable(id) == true then return end 
+			if id and IsMailForReturn(id) == true then return end 
 
 			orig_tryTakeAll(self,...)
 
@@ -329,7 +334,7 @@ local function InitProtection()
 		
 		takeAttach_Keybind.visible = function()
 			local id = MAIL_INBOX.mailId
-			return orig_takeAttachVisible() and (id == nil or IsMailReturnable(id) == false)
+			return orig_takeAttachVisible() and (id == nil or IsMailForReturn(id) == false)
 		end 
 	
 	end 
