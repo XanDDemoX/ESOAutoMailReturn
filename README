@@ -1,4 +1,4 @@
-ESOAutoMailReturn v1.0.0
+ESOAutoMailReturn v1.0.1
 By XanDDemoX
 
 A lightweight mail return/bounce addon. Automatically returns any mail with attachments received from another player that starts with one of the following subject prefixes (case insensitive):
@@ -10,6 +10,8 @@ A lightweight mail return/bounce addon. Automatically returns any mail with atta
 * /bounce
 * return
 * bounce 
+* /rts
+* rts
 
 Optionally any other text may follow the subject prefix e.g:
 
@@ -43,6 +45,8 @@ Install and tell your friends! They can bounce their mails with:
 * /bounce
 * return
 * bounce 
+* /rts
+* rts
 
 Optionally any other text may follow the subject prefix e.g:
 
@@ -55,6 +59,10 @@ Slash Commands
 
 Change Log
 
+Version 1.0.1
+
+	- Added /rts and rts subjects
+ 
 Version 1.0.0
 	- Added string trims for sanity
 

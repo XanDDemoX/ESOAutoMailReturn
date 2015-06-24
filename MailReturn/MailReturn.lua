@@ -7,7 +7,7 @@ local _tasks = {}
 local _delay = 1250
 local _prefix = "[AutoMailReturn]: "
 
-local _subjects = {"/r","/b","/ret","return","bounce","/return","/bounce"}
+local _subjects = {"/r","/b","/ret","/rts","rts","return","bounce","/return","/bounce"}
 
 local _settings = {autoDeleteEmpty = true, delay = _delay}
 
