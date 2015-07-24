@@ -4,7 +4,7 @@ local _task = nil
 local _pending = {}
 local _tasks = {}
 
-local _delay = 1250
+local _delay = 1500
 local _prefix = "[AutoMailReturn]: "
 
 local _subjects = {"/r","/b","/ret","/rts","rts","return","bounce","/return","/bounce"}
@@ -26,7 +26,7 @@ function stringStartWith(str,strstart)
 end
 
 local function IsPending(id)
-	local item =_pending[id] 
+	local item =_pending[zo_getSafeId64Key(id)] 
 	return item ~= nil,item
 end
 
@@ -81,19 +81,41 @@ local function HookDescriptor(name,func)
 
 end
 
+local function TryOpenMailbox()
+	if SCENE_MANAGER:IsShowing("mailInbox") then 
+		return false
+	else
+		RequestOpenMailbox()
+		return true
+	end
+end
+
+local function TryCloseMailbox()
+	CloseMailbox()
+end
+
+local function SetMailboxDirty()
+	MAIL_INBOX:OnInboxUpdate()
+end
+
+local function MailboxReturnMail(id)
+	ReturnMail(id)
+	SetMailboxDirty()
+end
+
+
 local function DelayedReturnMail(item,delay,callback)
 	local id = item.id
+	local key = zo_getSafeId64Key(id)
+	
+	if _pending[key] == nil then return end
+	
 	zo_callLater(function() 
 		
-		ReturnMail(id)
+		if _pending[key] == nil then return end
+		_pending[key] = nil
 		
-		_pending[id] = nil
-		
-		MAIL_INBOX:RefreshData()
-									
-		if item.last == true then
-			CloseMailbox()
-		end
+		MailboxReturnMail(id)
 		
 		if callback ~= nil then 
 			callback()
@@ -113,8 +135,12 @@ local function ReturnNext()
 	table.remove(_tasks,1)
 	
 	DelayedReturnMail(item,item.delay,function() 
-		d(item.text) 
-		ReturnNext()
+		d(item.text)
+		if item.last == true then 
+			TryCloseMailbox()
+		else
+			ReturnNext()
+		end 
 	end)
 
 end
@@ -136,7 +162,7 @@ local function QueueMail(data,total,delay)
 			
 			local t = {id=item.id,last=cur==total,delay=delay,item=item,text=_prefix..item.sender.." mail "..tostring(i).." of "..tostring(count).." returned."}
 			
-			_pending[item.id] = t
+			_pending[zo_getSafeId64Key(item.id)] = t
 			
 			table.insert(_tasks,t)
 			
@@ -144,10 +170,21 @@ local function QueueMail(data,total,delay)
 		
 	end
 	
+
+end
+
+local function StartQueued()
+	if #_tasks < 1 then return end 
+	
+	local id 
 	for i,item in ipairs(_tasks) do
-		RequestReadMail(item.id)
+		ReadMail(item.id)
+		if item.last then
+			id = item.id
+		end 
 	end
 
+	ReturnNext()
 end
 
 local function GetMailIds()
@@ -214,11 +251,12 @@ local function MailReturn_Run(func)
 		_blockedrun = true 
 		return 
 	end 
+	
 	if _task ~= nil then return end
 	_task = func 
 	
-	RequestOpenMailbox()
-
+	TryOpenMailbox()
+	
 end
 
 local function ReturnTask()
@@ -229,9 +267,10 @@ local function ReturnTask()
 	if count > 0 then
 		d(_prefix..tostring(count).." mail"..((count > 1 and "s") or "") .." to return to "..tostring(senderCount).." senders.")
 		QueueMail(data,count,_settings.delay)
+		StartQueued()
 	else
-		MAIL_INBOX:RefreshData()
-		CloseMailbox()
+		SetMailboxDirty()
+		TryCloseMailbox()
 	end
 end
 
@@ -267,20 +306,6 @@ local function MailReturn_Open_Mailbox(eventCode)
 	_task()
 end
 
-local function MailReturn_Read_Mail(eventCode,mailId)
-	local pending,item = IsPending(mailId)
-	
-	if pending == true then
-	
-		MAIL_INBOX:EndRead()
-		
-		if item.last == true then 
-			ReturnNext()
-		end
-		
-	end
-end
-
 local function MailReturn_Close_Mailbox(eventCode)
 	if _task == nil then return end
 	_task = nil
@@ -288,7 +313,7 @@ end
 
 local function MailReturn_Take_Attached_Item_Success(eventCode,id)
 	if _settings.autoDeleteEmpty == true and IsEmptyReturned(id) == true then
-		DeleteMail(id,false)
+		MAIL_INBOX:ConfirmDelete(id)
 	end
 end
 
@@ -360,6 +385,10 @@ local function addEvents(func,...)
 
 end
 
+
+
+
+
 local function Initialise()
 	InitProtection()
 	
@@ -373,8 +402,6 @@ local function Initialise()
 	addEvent(EVENT_MAIL_OPEN_MAILBOX, MailReturn_Open_Mailbox)
 	
 	addEvent(EVENT_MAIL_CLOSE_MAILBOX, MailReturn_Close_Mailbox)
-
-	addEvent(EVENT_MAIL_READABLE,MailReturn_Read_Mail)
 	
 	addEvent(EVENT_MAIL_TAKE_ATTACHED_ITEM_SUCCESS,MailReturn_Take_Attached_Item_Success)
 	
@@ -393,7 +420,17 @@ local function Initialise()
 			WindowClose()
 		end
 	end)
-
+	
+	-- block for fishing and looting etc
+	ZO_PreHookHandler(RETICLE.interact, "OnEffectivelyShown", function(control, hidden)
+		_blocked = true
+	end)
+	
+	ZO_PreHookHandler(RETICLE.interact, "OnHide",function(control, hidden)
+		_blocked = false
+	end)
+	
+	
 	HookDescriptor(GetString(SI_MAIL_SEND_SEND),UpdateCurrentMail)
 	
 	HookDescriptor(GetString(SI_MAIL_SEND_CLEAR),ClearCurrentMail)
