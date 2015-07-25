@@ -82,16 +82,17 @@ local function HookDescriptor(name,func)
 end
 
 local function TryOpenMailbox()
-	if SCENE_MANAGER:IsShowing("mailInbox") then 
-		return false
-	else
-		RequestOpenMailbox()
-		return true
-	end
+	if SCENE_MANAGER:IsShowing("mailInbox") then return false end
+
+	RequestOpenMailbox()
+	return true
 end
 
 local function TryCloseMailbox()
+	if SCENE_MANAGER:IsShowing("mailInbox") then return false end
+
 	CloseMailbox()
+	return true
 end
 
 local function MailboxReturnMail(id)
@@ -228,9 +229,6 @@ local function GetMailToReturn(ids)
 				table.insert(tbl,item)
 				
 				count = count + 1
-
-				--d("returnable: "..tostring(_read).." of "..tostring(_total).." "..senderDisplayName.." "..subjectText.." "..numAttachments)
-			
 			end
 		end
 		_read = _read + 1
@@ -285,16 +283,43 @@ local function UpdateCurrentMail()
 end
 
 local function MailReturn_Player_Activated(eventCode)
-	MailReturn_Run(ReturnTask)
+	zo_callLater(function() -- delay on activate just in case
+		MailReturn_Run(ReturnTask)
+	end,15000)
 end
 
+local _unreadCalling = false
 local function MailReturn_Mail_Num_Unread_Changed(eventCode,count)
-	if count == 0 then return end 
-	MailReturn_Run(ReturnTask)
+-- suppress some more calls
+	if count == 0 or _task ~= nil or _unreadCalling == true then return end
+	
+	_unreadCalling = true 
+	
+	zo_callLater(function() 
+		MailReturn_Run(ReturnTask)
+		_unreadCalling = false
+	end,5000)
+end
+
+local function InitMailbox()
+	-- fix for inaccessible mail bug =/. Ensures masterList is built and top mail is selected...whoops ZOS :P
+	if MAIL_INBOX.masterList == nil then 
+		MAIL_INBOX:BuildMasterList()
+		MAIL_INBOX:FilterScrollList()
+		MAIL_INBOX:SortScrollList()
+		MAIL_INBOX:CommitScrollList()
+		MAIL_INBOX:OnSelectionChanged(MAIL_INBOX.masterList[#MAIL_INBOX.masterList],MAIL_INBOX.masterList[#MAIL_INBOX.masterList])
+	end
 end
 
 local function MailReturn_Open_Mailbox(eventCode)
 	if _task == nil then return end
+	
+
+	if MAIL_INBOX.masterList == nil then 
+		InitMailbox()
+	end
+	
 	_task()
 end
 
@@ -450,7 +475,6 @@ local function Initialise()
 	
 	SLASH_COMMANDS["/rdelete"] = delfunc
 	
-
 end
 
 local function MailReturn_Loaded(eventCode, addOnName)

@@ -1,4 +1,4 @@
-ESOAutoMailReturn v1.0.1
+ESOAutoMailReturn v1.0.2
 =============
 
 A lightweight mail return/bounce addon for The Elder Scrolls Online. Automatically returns any mail with attachments received from another player that starts with one of the following subject prefixes (case insensitive):
@@ -26,7 +26,7 @@ Additional Features
 Installation
 =============
 
-1. [Download the latest version](https://raw.githubusercontent.com/XanDDemoX/ESOAutoMailReturn/master/zips/Auto%20Mail%20Return%201.0.1.zip)
+1. [Download the latest version](https://raw.githubusercontent.com/XanDDemoX/ESOAutoMailReturn/master/zips/Auto%20Mail%20Return%201.0.2.zip)
 2. Extract or copy the "MailReturn" folder into your addons folder:
 
 "Documents\Elder Scrolls Online\live\Addons"
@@ -63,6 +63,9 @@ Slash Commands
 
 Change Log
 =============
+* **Version 1.0.2**
+   * Fixed mail selection bug
+   * Prevented mail returning during recticle related interactions.
 * **Version 1.0.1**
   * Added /rts and rts subjects
 * **Version 1.0.0**
