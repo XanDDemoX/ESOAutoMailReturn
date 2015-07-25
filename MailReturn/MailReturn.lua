@@ -288,17 +288,10 @@ local function MailReturn_Player_Activated(eventCode)
 	end,15000)
 end
 
-local _unreadCalling = false
 local function MailReturn_Mail_Num_Unread_Changed(eventCode,count)
 -- suppress some more calls
-	if count == 0 or _task ~= nil or _unreadCalling == true then return end
-	
-	_unreadCalling = true 
-	
-	zo_callLater(function() 
-		MailReturn_Run(ReturnTask)
-		_unreadCalling = false
-	end,5000)
+	if count == 0 or _task ~= nil then return end
+	MailReturn_Run(ReturnTask)
 end
 
 local function InitMailbox()
