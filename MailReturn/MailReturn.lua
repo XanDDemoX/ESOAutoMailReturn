@@ -94,15 +94,9 @@ local function TryCloseMailbox()
 	CloseMailbox()
 end
 
-local function SetMailboxDirty()
-	MAIL_INBOX:OnInboxUpdate()
-end
-
 local function MailboxReturnMail(id)
 	ReturnMail(id)
-	SetMailboxDirty()
 end
-
 
 local function DelayedReturnMail(item,delay,callback)
 	local id = item.id
@@ -123,7 +117,6 @@ local function DelayedReturnMail(item,delay,callback)
 
 	end,delay)
 end
-
 
 local function ReturnNext()
 
@@ -269,7 +262,6 @@ local function ReturnTask()
 		QueueMail(data,count,_settings.delay)
 		StartQueued()
 	else
-		SetMailboxDirty()
 		TryCloseMailbox()
 	end
 end

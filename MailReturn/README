@@ -1,4 +1,4 @@
-ESOAutoMailReturn v1.0.1
+ESOAutoMailReturn v1.0.2
 By XanDDemoX
 
 A lightweight mail return/bounce addon. Automatically returns any mail with attachments received from another player that starts with one of the following subject prefixes (case insensitive):
@@ -58,6 +58,11 @@ Slash Commands
 * /rdelete +/-, on/off - Enable or disable automatic deletion of emptied returned mail 
 
 Change Log
+
+Version 1.0.2
+
+	- Fixed mail selection bug
+	- Prevented mail returning during recticle related interactions.
 
 Version 1.0.1
 
