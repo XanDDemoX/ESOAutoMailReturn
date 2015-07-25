@@ -131,6 +131,7 @@ local function ReturnNext()
 	DelayedReturnMail(item,item.delay,function() 
 		d(item.text)
 		if item.last == true then 
+			MAIL_INBOX:OnInboxUpdate()
 			TryCloseMailbox()
 		else
 			ReturnNext()
